@@ -4,8 +4,9 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Saki Store | Secure Admin Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        body { font-family: 'Poppins', sans-serif; background: #f0f4f8; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
         .admin-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); width: 95%; max-width: 450px; }
         h2 { text-align: center; color: #2d3436; margin-bottom: 30px; }
         
@@ -25,16 +26,16 @@
 <body>
 
 <div class="admin-card">
-    <h2>🚀 App Dashboard</h2>
+    <h2>🚀 Admin Dashboard</h2>
     
     <div class="input-group">
         <label>পাসওয়ার্ড (Secret Key)</label>
-        <input type="password" id="adminPass" placeholder="আপনার পাসওয়ার্ড দিন">
+        <input type="password" id="adminPass" placeholder="পাসওয়ার্ড দিন">
     </div>
 
     <div class="input-group">
         <label>অ্যাপের নাম</label>
-        <input type="text" id="appName" placeholder="যেমন: Netflix Mod">
+        <input type="text" id="appName" placeholder="যেমন: Fast VPN Pro">
     </div>
     
     <div class="input-group">
@@ -44,7 +45,7 @@
     
     <div class="input-group">
         <label>ডাউনলোড লিঙ্ক (APK)</label>
-        <input type="text" id="appLink" placeholder="Direct APK Link">
+        <input type="text" id="appLink" placeholder="APK ফাইলের লিঙ্ক">
     </div>
     
     <div class="input-group">
@@ -52,9 +53,9 @@
         <input type="text" id="appDesc" placeholder="অ্যাপ সম্পর্কে কিছু লিখুন">
     </div>
     
-    <button onclick="updateStore()" id="pubBtn" class="pub-btn">Publish to Site</button>
+    <button onclick="updateStore()" id="pubBtn" class="pub-btn">Update Store Now</button>
     <p id="status"></p>
-    <p class="footer-note">সতর্কতা: পাবলিশ করার পর সাইট আপডেট হতে ২-৩ মিনিট সময় লাগতে পারে।</p>
+    <p class="footer-note">সতর্কতা: আপডেট হতে ২-৫ মিনিট সময় লাগতে পারে।</p>
 </div>
 
 <script>
@@ -62,7 +63,7 @@
     const GITHUB_TOKEN = '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';
     const REPO_OWNER = 'saki1836';
     const REPO_NAME = 'saki1836.github.io';
-    const SECRET_KEY = '1234'; // আপনার নিজের পছন্দমতো পাসওয়ার্ড দিন
+    const SECRET_KEY = '1234'; // এই পাসওয়ার্ডটি ব্যবহার করবেন
 
     async function updateStore() {
         const pass = document.getElementById('adminPass').value;
@@ -81,11 +82,10 @@
         }
 
         btn.disabled = true;
-        status.innerText = "⏳ প্রসেসিং হচ্ছে...";
+        status.innerText = "⏳ সার্ভারে ফাইল পাঠানো হচ্ছে...";
         status.style.color = "#636e72";
 
         try {
-            // ১. ইনডেক্স ফাইল রিড করা
             const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/index.html`, {
                 headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
             });
@@ -93,18 +93,16 @@
             const oldContent = decodeURIComponent(escape(atob(data.content)));
             const sha = data.sha;
 
-            // ২. নতুন ডিজাইন ইনজেক্ট করা
             const cardDesign = `
         <div class="app-card">
             <img src="${icon || 'https://cdn-icons-png.flaticon.com/512/330/330730.png'}" alt="${name}">
             <h3>${name}</h3>
-            <p>${desc || 'No description available.'}</p>
+            <p>${desc || 'প্রিমিয়াম অ্যান্ড্রয়েড অ্যাপ।'}</p>
             <a href="${link}" class="btn-dl">Download</a>
         </div>`;
 
             const updatedContent = oldContent.replace('<div class="app-grid" id="appGrid">', `<div class="app-grid" id="appGrid">${cardDesign}`);
 
-            // ৩. আপডেট পুশ করা
             const updateRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/index.html`, {
                 method: 'PUT',
                 headers: {
@@ -112,7 +110,7 @@
                     'Content-Type': 'application/json'
                 },
                 body: JSON.stringify({
-                    message: `➕ Added App: ${name}`,
+                    message: `➕ Added: ${name}`,
                     content: btoa(unescape(encodeURIComponent(updatedContent))),
                     sha: sha
                 })
@@ -123,7 +121,7 @@
                 status.innerText = "✅ সাইট আপডেট সফল হয়েছে!";
                 setTimeout(() => location.reload(), 2000);
             } else {
-                throw new Error("GitHub Error");
+                throw new Error("GitHub Sync Error");
             }
         } catch (err) {
             status.style.color = "#d63031";
