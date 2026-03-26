@@ -1,0 +1,137 @@
+<!DOCTYPE html>
+<html lang="bn">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Saki Store | Secure Admin Dashboard</title>
+    <style>
+        body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f0f4f8; margin: 0; display: flex; justify-content: center; align-items: center; min-height: 100vh; }
+        .admin-card { background: white; padding: 40px; border-radius: 20px; box-shadow: 0 20px 50px rgba(0,0,0,0.1); width: 95%; max-width: 450px; }
+        h2 { text-align: center; color: #2d3436; margin-bottom: 30px; }
+        
+        .input-group { margin-bottom: 15px; }
+        label { display: block; font-size: 13px; color: #636e72; margin-bottom: 5px; font-weight: 600; }
+        input { width: 100%; padding: 12px; border: 2px solid #e1e8ee; border-radius: 10px; box-sizing: border-box; font-size: 14px; transition: 0.3s; }
+        input:focus { border-color: #00a884; outline: none; }
+        
+        .pub-btn { background: #00a884; color: white; border: none; padding: 15px; width: 100%; border-radius: 10px; font-size: 16px; font-weight: bold; cursor: pointer; margin-top: 20px; transition: 0.3s; }
+        .pub-btn:hover { background: #008f6f; transform: translateY(-2px); box-shadow: 0 5px 15px rgba(0,168,132,0.3); }
+        .pub-btn:disabled { background: #ccc; transform: none; box-shadow: none; cursor: not-allowed; }
+        
+        #status { text-align: center; margin-top: 15px; font-size: 14px; font-weight: 600; }
+        .footer-note { text-align: center; font-size: 11px; color: #b2bec3; margin-top: 20px; }
+    </style>
+</head>
+<body>
+
+<div class="admin-card">
+    <h2>🚀 App Dashboard</h2>
+    
+    <div class="input-group">
+        <label>পাসওয়ার্ড (Secret Key)</label>
+        <input type="password" id="adminPass" placeholder="আপনার পাসওয়ার্ড দিন">
+    </div>
+
+    <div class="input-group">
+        <label>অ্যাপের নাম</label>
+        <input type="text" id="appName" placeholder="যেমন: Netflix Mod">
+    </div>
+    
+    <div class="input-group">
+        <label>আইকন ইউআরএল (URL)</label>
+        <input type="text" id="appIcon" placeholder="https://example.com/icon.png">
+    </div>
+    
+    <div class="input-group">
+        <label>ডাউনলোড লিঙ্ক (APK)</label>
+        <input type="text" id="appLink" placeholder="Direct APK Link">
+    </div>
+    
+    <div class="input-group">
+        <label>ছোট বর্ণনা</label>
+        <input type="text" id="appDesc" placeholder="অ্যাপ সম্পর্কে কিছু লিখুন">
+    </div>
+    
+    <button onclick="updateStore()" id="pubBtn" class="pub-btn">Publish to Site</button>
+    <p id="status"></p>
+    <p class="footer-note">সতর্কতা: পাবলিশ করার পর সাইট আপডেট হতে ২-৩ মিনিট সময় লাগতে পারে।</p>
+</div>
+
+<script>
+    // আপনার তথ্য
+    const GITHUB_TOKEN = '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';
+    const REPO_OWNER = 'saki1836';
+    const REPO_NAME = 'saki1836.github.io';
+    const SECRET_KEY = '1234'; // আপনার নিজের পছন্দমতো পাসওয়ার্ড দিন
+
+    async function updateStore() {
+        const pass = document.getElementById('adminPass').value;
+        const name = document.getElementById('appName').value;
+        const icon = document.getElementById('appIcon').value;
+        const link = document.getElementById('appLink').value;
+        const desc = document.getElementById('appDesc').value;
+        const status = document.getElementById('status');
+        const btn = document.getElementById('pubBtn');
+
+        if(pass !== SECRET_KEY) {
+            alert("ভুল পাসওয়ার্ড!"); return;
+        }
+        if(!name || !link) {
+            alert("নাম এবং লিঙ্ক দিন!"); return;
+        }
+
+        btn.disabled = true;
+        status.innerText = "⏳ প্রসেসিং হচ্ছে...";
+        status.style.color = "#636e72";
+
+        try {
+            // ১. ইনডেক্স ফাইল রিড করা
+            const res = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/index.html`, {
+                headers: { 'Authorization': `token ${GITHUB_TOKEN}` }
+            });
+            const data = await res.json();
+            const oldContent = decodeURIComponent(escape(atob(data.content)));
+            const sha = data.sha;
+
+            // ২. নতুন ডিজাইন ইনজেক্ট করা
+            const cardDesign = `
+        <div class="app-card">
+            <img src="${icon || 'https://cdn-icons-png.flaticon.com/512/330/330730.png'}" alt="${name}">
+            <h3>${name}</h3>
+            <p>${desc || 'No description available.'}</p>
+            <a href="${link}" class="btn-dl">Download</a>
+        </div>`;
+
+            const updatedContent = oldContent.replace('<div class="app-grid" id="appGrid">', `<div class="app-grid" id="appGrid">${cardDesign}`);
+
+            // ৩. আপডেট পুশ করা
+            const updateRes = await fetch(`https://api.github.com/repos/${REPO_OWNER}/${REPO_NAME}/contents/index.html`, {
+                method: 'PUT',
+                headers: {
+                    'Authorization': `token ${GITHUB_TOKEN}`,
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    message: `➕ Added App: ${name}`,
+                    content: btoa(unescape(encodeURIComponent(updatedContent))),
+                    sha: sha
+                })
+            });
+
+            if(updateRes.ok) {
+                status.style.color = "#00a884";
+                status.innerText = "✅ সাইট আপডেট সফল হয়েছে!";
+                setTimeout(() => location.reload(), 2000);
+            } else {
+                throw new Error("GitHub Error");
+            }
+        } catch (err) {
+            status.style.color = "#d63031";
+            status.innerText = "❌ ভুল হয়েছে: " + err.message;
+            btn.disabled = false;
+        }
+    }
+</script>
+
+</body>
+</html>
